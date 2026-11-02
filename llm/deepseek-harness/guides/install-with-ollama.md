@@ -32,21 +32,21 @@ touch compose.yaml
 - рабочие файлы и настройки DSH сохраняются в именованных томах `ngm-llm-deepseek-harness-dsh-workspace` и `ngm-llm-deepseek-harness-dsh-data`;
 - для DSH используется тег `latest`, поскольку образ не публикуется с версионным тегом. Зафиксированную версию Ollama можно обновлять отдельно после проверки примера.
 
-## Шаг 3. Запустить Ollama и загрузить модель qwen3:8b
+## Шаг 3. Запустить Ollama и загрузить модель qwen3:latest
 
 Запускаем сервис, скачиваем модель и проверяем список моделей:
 
 ```bash
 docker compose up -d ollama
-docker compose exec ollama ollama pull qwen3:8b
+docker compose exec ollama ollama pull qwen3:latest
 docker compose exec ollama ollama list
 ```
 
-В списке должна появиться `qwen3:8b`; идентификатор и время будут отличаться:
+В списке должна появиться `qwen3:latest`; идентификатор и время будут отличаться:
 
 ```text
 NAME                ID              SIZE      MODIFIED
-qwen3:8b            500a1f067a9f    5.2 GB    46 minutes ago
+qwen3:latest         500a1f067a9f    5.2 GB    46 minutes ago
 ```
 
 ## Шаг 4. Запустить контейнер DSH
@@ -63,11 +63,11 @@ docker compose up -d dsh
 
 1. В интерфейсе DSH откройте раздел `Settings`.
 
-   ![DSH Settings](../assets/dsh-settings.png)
+   ![Боковое меню DSH с пунктом Settings](../assets/dsh-settings.png)
 
 2. В разделе `Models` выберите `+ Add model provider`.
 
-   ![Add model](../assets/dsh-model-add.png)
+   ![Раздел Models с кнопкой Add model provider](../assets/dsh-model-add.png)
 
 3. В открывшемся окне выберите `Custom model API` и заполните поля:
 
@@ -79,7 +79,7 @@ docker compose up -d dsh
 
 4. Нажмите `Fetch available models`. В списке должна появиться загруженная модель. Выберите её и нажмите `Add selected`.
 
-   ![Models available](../assets/dsh-models-available.png)
+   ![Список моделей Ollama, доступных для добавления в DSH](../assets/dsh-models-available.png)
 
 5. Завершите настройку кнопкой `Create provider`.
 

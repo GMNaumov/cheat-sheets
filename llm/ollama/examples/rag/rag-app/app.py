@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 
 import streamlit as st
-from ollama import Client
+from ollama import Client, ResponseError
 from pypdf import PdfReader
 from qdrant_client import QdrantClient, models
 
@@ -11,6 +11,10 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
 CHAT_MODEL = os.getenv("CHAT_MODEL", "qwen3:4b")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
+EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "32"))
+if EMBEDDING_BATCH_SIZE < 1:
+    raise ValueError("EMBEDDING_BATCH_SIZE должно быть положительным числом.")
+
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
 DOCS_PATH = Path(os.getenv("DOCS_PATH", "/app/docs"))
 
@@ -21,7 +25,9 @@ qdrant = QdrantClient(url=QDRANT_URL, timeout=30)
 def ensure_model(model_name: str) -> None:
     try:
         ollama.show(model_name)
-    except Exception:
+    except ResponseError as error:
+        if error.status_code != 404:
+            raise
         ollama.pull(model_name)
 
 
@@ -58,18 +64,19 @@ def index_documents() -> int:
 
     ensure_model(EMBEDDING_MODEL)
     texts = [str(chunk["text"]) for chunk in chunks]
-    embeddings = ollama.embed(model=EMBEDDING_MODEL, input=texts).embeddings
+    embeddings = []
+    for start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+        batch = texts[start : start + EMBEDDING_BATCH_SIZE]
+        embeddings.extend(ollama.embed(model=EMBEDDING_MODEL, input=batch).embeddings)
 
-    if qdrant.collection_exists(COLLECTION_NAME):
-        qdrant.delete_collection(COLLECTION_NAME)
-
-    qdrant.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=models.VectorParams(
-            size=len(embeddings[0]),
-            distance=models.Distance.COSINE,
-        ),
-    )
+    if not qdrant.collection_exists(COLLECTION_NAME):
+        qdrant.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=models.VectorParams(
+                size=len(embeddings[0]),
+                distance=models.Distance.COSINE,
+            ),
+        )
 
     points = []
     for chunk, vector in zip(chunks, embeddings, strict=True):
@@ -83,6 +90,15 @@ def index_documents() -> int:
         )
 
     qdrant.upsert(collection_name=COLLECTION_NAME, points=points, wait=True)
+    qdrant.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=models.FilterSelector(
+            filter=models.Filter(
+                must_not=[models.HasIdCondition(has_id=[point.id for point in points])],
+            ),
+        ),
+        wait=True,
+    )
     return len(points)
 
 

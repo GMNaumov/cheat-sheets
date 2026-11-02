@@ -58,6 +58,8 @@ find . -type f -name 'README.md'
 cp -i config.example.yaml config.yaml
 ```
 
+Копирование каталогов и сохранение атрибутов описано в [справочнике `cp`](cp.md).
+
 ### Переместить или переименовать файл
 
 ```bash
@@ -71,3 +73,5 @@ mv -i old-name.txt new-name.txt
 ```bash
 rm -i old-name.txt
 ```
+
+Рекурсивное удаление и работа с именами, начинающимися с дефиса, описаны в [справочнике `rm`](rm.md).

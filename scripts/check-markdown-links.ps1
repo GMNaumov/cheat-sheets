@@ -100,9 +100,27 @@ Get-ChildItem -LiteralPath $rootPath -Recurse -File -Filter '*.md' |
     ForEach-Object {
         $source = $_
         $lineNumber = 0
+        $fenceMarker = ''
+        $fenceLength = 0
 
         foreach ($line in Get-Content -LiteralPath $source.FullName -Encoding UTF8) {
             $lineNumber++
+
+            if ($fenceLength -eq 0 -and $line -match '^\s{0,3}(?<marker>`{3,}|~{3,})') {
+                $fenceMarker = $Matches['marker'].Substring(0, 1)
+                $fenceLength = $Matches['marker'].Length
+                continue
+            }
+
+            if ($fenceLength -gt 0) {
+                $closingPattern = '^\s{0,3}' + [regex]::Escape($fenceMarker) +
+                    '{' + $fenceLength + ',}\s*$'
+                if ($line -match $closingPattern) {
+                    $fenceMarker = ''
+                    $fenceLength = 0
+                }
+                continue
+            }
 
             foreach ($match in [regex]::Matches($line, $inlinePattern)) {
                 Test-LocalLink -Source $source -LineNumber $lineNumber -RawTarget $match.Groups['target'].Value

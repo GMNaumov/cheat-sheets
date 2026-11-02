@@ -14,11 +14,7 @@
 
 ## Соглашения репозитория
 
-- В каждой крупной тематической папке находится навигационный `README.md`.
-- Руководства размещаются в `guides/`, команды — в `commands.md` или `commands/`.
-- Запускаемые конфигурации и код размещаются в `examples/`.
-- Изображения и другие вложения размещаются в `assets/` рядом с материалом.
-- Имена файлов и каталогов записываются в lowercase kebab-case, кроме стандартных имён `README.md` и `Dockerfile`.
+- Расположение и имена файлов описаны в [правилах репозитория](conventions/repository.md).
 - Структура Markdown-материалов описана в [эталонном шаблоне](conventions/markdown-template.md).
 
 ## Проверка репозитория
@@ -29,10 +25,24 @@
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-markdown-links.ps1
 ```
 
-Относительные пути из Compose-файлов проверяются отдельно:
+Пути из Compose-файлов проверяются отдельно. Для разбора конфигурации нужен Docker Compose:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-compose-paths.ps1
 ```
+
+Для проверки Markdown с помощью `markdownlint-cli2` нужны Node.js и `npx`:
+
+```powershell
+npx --yes markdownlint-cli2@0.24.0 "**/*.md" "#node_modules"
+```
+
+Для проверки синтаксиса Python нужен Python 3:
+
+```powershell
+python -m compileall -q .\llm\ollama\examples
+```
+
+В Linux и macOS замените `python` на `python3`, если интерпретатор установлен под этим именем.
 
 GitHub Actions при push и pull request также проверяет Markdown, синтаксис Python и корректность Compose-конфигураций.
