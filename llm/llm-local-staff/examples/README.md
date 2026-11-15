@@ -27,11 +27,11 @@ docker compose up -d --wait --wait-timeout 300
 После готовности Ollama загрузите модель. Для `qwen3:4b` потребуется около 2.5 GB на диске и дополнительная память во время выполнения:
 
 ```bash
-docker compose exec ollama-local ollama pull qwen3:4b
+docker compose exec ollama-local ollama pull qwen3.5:9b
 docker compose exec ollama-local ollama list
 ```
 
-Откройте `http://localhost:3000`, выберите `qwen3:4b` и отправьте сообщение. После ответа можно проверить размещение модели в памяти:
+Откройте `http://localhost:3000`, выберите `qwen3.5:9b` и отправьте сообщение. После ответа можно проверить размещение модели в памяти:
 
 ```bash
 docker compose exec ollama-local ollama ps
@@ -40,6 +40,12 @@ docker compose exec ollama-local ollama ps
 В колонке `PROCESSOR` видно, использует ли модель GPU полностью или частично. `OLLAMA_KEEP_ALIVE=30m` сохраняет модель в памяти до 30 минут после последнего запроса.
 
 Адрес Ollama для Open WebUI — `http://ollama-local:11434`, а для программ на хосте — `http://localhost:11434`. `host.docker.internal` здесь не требуется: сервисы общаются в сети Compose.
+
+## Модели ollama для RTX 5060 Ti
+
+`qwen3.5:9b`
+`deepseek-r1:14b`
+`qwen3:14b`
 
 ## Запуск DeepSeek Harness
 
