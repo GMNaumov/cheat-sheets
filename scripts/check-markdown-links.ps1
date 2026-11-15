@@ -2,6 +2,7 @@ param(
     [string]$Root = (Split-Path -Parent $PSScriptRoot)
 )
 
+$ErrorActionPreference = 'Stop'
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $problems = [System.Collections.Generic.List[object]]::new()
 $anchorCache = @{}
@@ -12,13 +13,26 @@ function Get-MarkdownAnchors {
     param([string]$Path)
 
     if ($anchorCache.ContainsKey($Path)) {
-        return $anchorCache[$Path]
+        return ,$anchorCache[$Path]
     }
 
-    $anchors = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $duplicates = @{}
+    $anchors = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    $fenceMarker = ''
+    $fenceLength = 0
 
     foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        if ($fenceLength -eq 0 -and $line -match '^\s{0,3}(?<marker>`{3,}|~{3,})') {
+            $fenceMarker = $Matches['marker'].Substring(0, 1)
+            $fenceLength = $Matches['marker'].Length
+            continue
+        }
+        if ($fenceLength -gt 0) {
+            $closingPattern = '^\s{0,3}' + [regex]::Escape($fenceMarker) + '{' + $fenceLength + ',}\s*$'
+            if ($line -match $closingPattern) {
+                $fenceLength = 0
+            }
+            continue
+        }
         if ($line -notmatch '^\s{0,3}#{1,6}\s+(?<heading>.+?)\s*#*\s*$') {
             continue
         }
@@ -28,19 +42,18 @@ function Get-MarkdownAnchors {
         $slug = [regex]::Replace($slug, '[^\p{L}\p{Nd}\s_-]', '')
         $slug = [regex]::Replace($slug.Trim(), '\s+', '-')
 
-        if ($duplicates.ContainsKey($slug)) {
-            $duplicates[$slug]++
-            $slug = "$slug-$($duplicates[$slug])"
-        }
-        else {
-            $duplicates[$slug] = 0
+        $baseSlug = $slug
+        $suffix = 0
+        while ($anchors.Contains($slug)) {
+            $suffix++
+            $slug = "$baseSlug-$suffix"
         }
 
         [void]$anchors.Add($slug)
     }
 
     $anchorCache[$Path] = $anchors
-    return $anchors
+    return ,$anchors
 }
 
 function Test-LocalLink {
@@ -96,7 +109,7 @@ function Test-LocalLink {
 }
 
 Get-ChildItem -LiteralPath $rootPath -Recurse -File -Filter '*.md' |
-    Where-Object { $_.FullName -notlike '*\.git\*' } |
+    Where-Object { $_.FullName -notmatch '[\\/](\.git|node_modules|\.venv)[\\/]' } |
     ForEach-Object {
         $source = $_
         $lineNumber = 0

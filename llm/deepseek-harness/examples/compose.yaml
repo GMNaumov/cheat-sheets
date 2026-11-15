@@ -9,6 +9,12 @@ services:
     restart: unless-stopped
     volumes:
       - ngm-llm-deepseek-harness-ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     networks:
       - ngm-llm-deepseek-harness-net
     
@@ -20,7 +26,8 @@ services:
     ports:
       - "127.0.0.1:3080:3080"
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     environment:
       # Разрешаем доступ к DSH с localhost и из контейнера dsh.
       - DSH_CONTAINER_TRUSTED_HOSTS=localhost,127.0.0.1,dsh

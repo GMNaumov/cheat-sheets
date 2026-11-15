@@ -1,19 +1,19 @@
 # Команды Ollama в Docker
 
-Команды для контейнера с именем `ollama`. Команды Compose выполняются в каталоге с `compose.yaml`; в примерах управления моделями используется `phi4-mini`.
+Команды для сервиса `ollama` в примерах этого раздела. Выполняйте их в каталоге соответствующего `compose.yaml`; в примерах управления моделями используется `phi4-mini`. Имя контейнера знать не требуется.
 
 ## Контейнер и окружение
 
 ### Узнать версию Ollama
 
 ```bash
-docker exec ollama ollama --version
+docker compose exec ollama ollama --version
 ```
 
 ### Показать скачанные модели
 
 ```bash
-docker exec ollama ollama list
+docker compose exec ollama ollama list
 ```
 
 ### Проверить состояние сервиса
@@ -49,13 +49,13 @@ docker compose up -d
 ### Посмотреть использование ресурсов
 
 ```bash
-docker stats ollama
+docker compose stats ollama
 ```
 
 ### Открыть оболочку контейнера
 
 ```bash
-docker exec -it ollama sh
+docker compose exec ollama sh
 ```
 
 ## Модели
@@ -65,7 +65,7 @@ docker exec -it ollama sh
 `ollama ps` показывает модели, которые сейчас загружены для выполнения запросов.
 
 ```bash
-docker exec ollama ollama ps
+docker compose exec ollama ollama ps
 ```
 
 ### Загрузить модель
@@ -73,21 +73,21 @@ docker exec ollama ollama ps
 Скачивает `phi4-mini` в контейнер. Понадобятся интернет и свободное место на диске.
 
 ```bash
-docker exec ollama ollama pull phi4-mini
+docker compose exec ollama ollama pull phi4-mini
 ```
 
 ### Посмотреть сведения о модели
 
 ```bash
-docker exec ollama ollama show phi4-mini
+docker compose exec ollama ollama show phi4-mini
 ```
 
 ### Запустить интерактивный чат
 
-Флаг `-it` подключает терминал для ввода сообщений.
+`docker compose exec` по умолчанию подключает интерактивный терминал для ввода сообщений.
 
 ```bash
-docker exec -it ollama ollama run phi4-mini
+docker compose exec ollama ollama run phi4-mini
 ```
 
 ### Остановить модель
@@ -95,7 +95,7 @@ docker exec -it ollama ollama run phi4-mini
 Выгружает модель из памяти, сохраняя её файлы.
 
 ```bash
-docker exec ollama ollama stop phi4-mini
+docker compose exec ollama ollama stop phi4-mini
 ```
 
 ### Удалить модель с диска
@@ -103,5 +103,5 @@ docker exec ollama ollama stop phi4-mini
 Удаляет файлы модели `phi4-mini` из хранилища Ollama.
 
 ```bash
-docker exec ollama ollama rm phi4-mini
+docker compose exec ollama ollama rm phi4-mini
 ```

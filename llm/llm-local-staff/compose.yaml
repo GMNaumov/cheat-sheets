@@ -1,0 +1,66 @@
+name: llm-local-staff
+
+services:
+  ollama-local:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-local-data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=30m          # модель выгружается из VRAM через 5 минут простоя
+      - OLLAMA_HOST=0.0.0.0           # слушать внутри docker-сети, а не только localhost
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  open-webui-local:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui-local-data:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434   # обращение к Ollama по имени сервиса внутри сети compose
+      - WEBUI_AUTH=false                       # отключить вход для локального использования
+    depends_on:
+      ollama-local:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # --- Опционально: DeepSeek Harness ---
+  # Запуск: docker compose --profile harness up -d
+  dsh-local:
+    image: m11s/deepseek-harness:0.2.0-rc.2   # или runzhliu/deepseek-harness:0.1.0-rc.6
+    container_name: dsh-local
+    restart: unless-stopped
+    profiles: ["harness"]
+    ports:
+      - "127.0.0.1:3080:3080"                  # только localhost хоста, наружу не торчит
+    volumes:
+      - dsh-local-data:/home/dsh/.dsh
+      - ./workspace:/workspace                 # папка для файлов проекта, которые увидит агент
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}   # переменная из .env или окружения
+    depends_on:
+      ollama-local:
+        condition: service_healthy
+
+volumes:
+  ollama-local-data:
+  open-webui-local-data:
+  dsh-local-data:

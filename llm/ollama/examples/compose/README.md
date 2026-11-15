@@ -10,10 +10,10 @@
 
 ## Запуск
 
-Выполните команды в каталоге примера:
+Выполните команды в каталоге примера. Флаг `--wait` дожидается готовности API перед загрузкой модели:
 
 ```bash
-docker compose up -d
+docker compose up -d --wait ollama
 docker compose exec ollama ollama pull qwen3:4b
 docker compose exec ollama ollama list
 ```

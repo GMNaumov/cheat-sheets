@@ -29,6 +29,10 @@ jobs:
         shell: pwsh
         run: ./scripts/check-compose-paths.ps1
 
+      - name: Test repository validators
+        shell: pwsh
+        run: ./scripts/test-validators.ps1
+
       - name: Validate Compose files
         shell: bash
         run: |

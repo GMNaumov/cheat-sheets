@@ -2,6 +2,7 @@ param(
     [string]$Root = (Split-Path -Parent $PSScriptRoot)
 )
 
+$ErrorActionPreference = 'Stop'
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $problems = [System.Collections.Generic.List[object]]::new()
 
@@ -61,19 +62,40 @@ Get-ChildItem -LiteralPath $rootPath -Recurse -File |
     ForEach-Object {
         $composeFile = $_
         $relativeCompose = $composeFile.FullName.Substring($rootPath.Length + 1)
-        $configJson = & docker compose -f $composeFile.FullName config --format json 2>&1 | Out-String
-
-        if ($LASTEXITCODE -ne 0) {
+        # JSON записывается отдельно от диагностического вывода Docker.
+        # --no-env-resolution сохраняет env_file для проверки исходных путей.
+        $configPath = [System.IO.Path]::GetTempFileName()
+        try {
+            # Windows PowerShell 5.1 представляет stderr как ErrorRecord даже при коде 0.
+            $ErrorActionPreference = 'Continue'
+            try {
+                $diagnostics = & docker compose --profile '*' -f $composeFile.FullName config `
+                    --format json --no-env-resolution --output $configPath 2>&1 | Out-String
+            }
+            finally {
+                $ErrorActionPreference = 'Stop'
+            }
+            if ($LASTEXITCODE -ne 0) {
+                throw "Docker Compose failed: $($diagnostics.Trim())"
+            }
+            $config = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($null -eq $config.services) {
+                throw 'Compose JSON does not contain services.'
+            }
+        }
+        catch {
             $problems.Add([PSCustomObject]@{
                     Compose = $relativeCompose
                     Field   = 'config'
                     Path    = '-'
-                    Problem = $configJson.Trim()
+                    Problem = $_.Exception.Message
                 })
             return
         }
+        finally {
+            Remove-Item -LiteralPath $configPath -Force
+        }
 
-        $config = $configJson | ConvertFrom-Json
         foreach ($serviceProperty in $config.services.PSObject.Properties) {
             $serviceName = $serviceProperty.Name
             $service = $serviceProperty.Value
@@ -89,10 +111,11 @@ Get-ChildItem -LiteralPath $rootPath -Recurse -File |
                 Test-ComposePath -Compose $relativeCompose -Field "services.$serviceName.build.context" `
                     -BasePath $composeFile.DirectoryName -Path $buildContext
 
-                if ($service.build -isnot [string] -and $service.build.dockerfile) {
+                if (-not $service.build.dockerfile_inline) {
                     $resolvedContext = Resolve-ComposePath -BasePath $composeFile.DirectoryName -Path $buildContext
+                    $dockerfile = if ($service.build.dockerfile) { $service.build.dockerfile } else { 'Dockerfile' }
                     Test-ComposePath -Compose $relativeCompose -Field "services.$serviceName.build.dockerfile" `
-                        -BasePath $resolvedContext -Path $service.build.dockerfile
+                        -BasePath $resolvedContext -Path $dockerfile
                 }
             }
 

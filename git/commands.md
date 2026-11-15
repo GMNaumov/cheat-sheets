@@ -11,8 +11,8 @@
 Git сохраняет имя и адрес электронной почты автора в новых коммитах. При настройке другого пользователя замените значения:
 
 ```bash
-git config --global user.name "Georgii Naumov"
-git config --global user.email "gmnaumov@yandex.ru"
+git config --global user.name "Ваше Имя"
+git config --global user.email "you@example.com"
 ```
 
 ### Создать репозиторий и первый коммит

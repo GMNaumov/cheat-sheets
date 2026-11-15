@@ -37,6 +37,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-compose-path
 npx --yes markdownlint-cli2@0.24.0 "**/*.md" "#node_modules"
 ```
 
+Регрессионные проверки валидаторов требуют Docker CLI с Compose, но не запускают контейнеры и не скачивают образы. Они проверяют ошибки ссылок, якорей, конфигураций и локальных путей, а также обработку предупреждений и повреждённого JSON:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test-validators.ps1
+```
+
 Для проверки синтаксиса Python нужен Python 3:
 
 ```powershell
@@ -44,5 +50,6 @@ python -m compileall -q .\llm\ollama\examples
 ```
 
 В Linux и macOS замените `python` на `python3`, если интерпретатор установлен под этим именем.
+Для PowerShell-скриптов используйте `pwsh`, если `powershell` отсутствует.
 
-GitHub Actions при push и pull request также проверяет Markdown, синтаксис Python и корректность Compose-конфигураций.
+GitHub Actions при push и pull request также проверяет Markdown, синтаксис Python, корректность Compose-конфигураций и работу валидаторов. Эти проверки не подтверждают успешный запуск примеров.

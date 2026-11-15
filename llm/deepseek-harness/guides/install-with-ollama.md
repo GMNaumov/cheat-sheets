@@ -34,10 +34,10 @@ touch compose.yaml
 
 ## Шаг 3. Запустить Ollama и загрузить модель qwen3:latest
 
-Запускаем сервис, скачиваем модель и проверяем список моделей:
+Запускаем сервис с ожиданием готовности API (`--wait`), скачиваем модель и проверяем список моделей:
 
 ```bash
-docker compose up -d ollama
+docker compose up -d --wait ollama
 docker compose exec ollama ollama pull qwen3:latest
 docker compose exec ollama ollama list
 ```

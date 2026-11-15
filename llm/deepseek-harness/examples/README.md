@@ -4,10 +4,10 @@ Compose-конфигурация запускает DeepSeek Harness и Ollama �
 
 ## Запуск
 
-Выполните команды в каталоге примера:
+Нужны Docker с Compose, интернет и свободное место для образов и модели. Выполните команды в каталоге примера. Флаг `--wait` дожидается готовности Ollama перед загрузкой модели:
 
 ```bash
-docker compose up -d ollama
+docker compose up -d --wait ollama
 docker compose exec ollama ollama pull qwen3:latest
 docker compose up -d dsh
 ```
