@@ -1,0 +1,27 @@
+{
+  // Название, которое будет отображаться в VS Code
+  "name": "Local .NET 8 Dev Environment",
+
+  // Указываем путь к вашему файлу docker-compose.yml
+  "dockerComposeFile": "../compose.yaml",
+
+  // Указываем имя сервиса из docker-compose.yml, к которому нужно подключиться
+  "service": "dotnet-8.0-local",
+
+  // Папка, которая будет открыта по умолчанию внутри контейнера
+  "workspaceFolder": "/app",
+
+  // Что делать с контейнером при закрытии окна VS Code.
+  // "stopCompose" — остановит контейнер. Можно изменить на "none", чтобы он продолжал работать.
+  "shutdownAction": "stopCompose",
+
+  // Расширения VS Code, которые будут автоматически установлены внутри контейнера
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp"
+      ]
+    }
+  }
+}

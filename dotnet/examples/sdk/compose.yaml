@@ -1,14 +1,14 @@
 services:
-  sdk:
+  dotnet-8.0-local:
     image: mcr.microsoft.com/dotnet/sdk:8.0
     restart: "no"
     command: ["tail", "-f", "/dev/null"]
     working_dir: /app
     volumes:
-      - ./src:/app
-      - dotnet-8.0-nuget-cache:/root/.nuget/packages
+      - D:\Proejcts\dotnet-sandbox:/app
+      - dotnet-8.0-local-nuget-cache:/root/.nuget/packages
     environment:
       ASPNETCORE_ENVIRONMENT: Development
 
 volumes:
-  dotnet-8.0-nuget-cache:
+  dotnet-8.0-local-nuget-cache:
