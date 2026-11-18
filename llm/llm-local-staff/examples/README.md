@@ -47,6 +47,92 @@ docker compose exec ollama-local ollama ps
 `deepseek-r1:14b`
 `qwen3:14b`
 
+## Использование локальной LLM в VS Code через Continue
+
+[Continue](https://docs.continue.dev/ide-extensions/install) подключается напрямую к Ollama из этого примера. Инструкция рассчитана на VS Code и расширение, работающие на том же хосте, где опубликован порт `11434`. Сначала выполните [запуск Ollama](#запуск-ollama-и-open-webui) с ожиданием готовности и загрузите `qwen3.5:9b`.
+
+### Подготовка моделей и расширения
+
+Для чата и редактирования используйте уже загруженную `qwen3.5:9b`. Для автодополнения кода Continue рекомендует отдельную небольшую модель [`qwen2.5-coder:1.5b`](https://docs.continue.dev/customize/deep-dives/autocomplete#how-to-set-up-autocomplete-in-continue-with-ollama-local-model). Загрузите её из каталога этого Compose-примера и проверьте список моделей:
+
+```bash
+docker compose exec ollama-local ollama pull qwen2.5-coder:1.5b
+docker compose exec ollama-local ollama list
+```
+
+В VS Code откройте Extensions (`Ctrl+Shift+X`), найдите расширение с идентификатором `Continue.continue` и установите его. Откройте папку проекта, затем панель Continue через значок расширения или `Ctrl+L` (`Cmd+L` на macOS).
+
+### Конфигурация Continue: config.yaml
+
+В селекторе конфигурации над полем ввода Continue выберите `Local Config` и нажмите значок шестерёнки. Откроется пользовательский файл конфигурации:
+
+- Windows: `%USERPROFILE%\.continue\config.yaml`.
+- Linux и macOS: `~/.continue/config.yaml`.
+
+Это файл настроек расширения, его не нужно помещать рядом с `compose.yaml` или монтировать в контейнер. Ниже приведён полный пример для формата YAML `schema: v1`; старый `config.json` устарел. Если файл уже настроен, сохраните нужные параметры и добавьте модели в существующий список `models`. [Расположение и загрузка конфигурации](https://docs.continue.dev/customize/deep-dives/configuration), [справочник полей](https://docs.continue.dev/reference).
+
+```yaml
+name: Local Ollama
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Qwen 3.5 9B
+    provider: ollama
+    model: qwen3.5:9b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+    defaultCompletionOptions:
+      contextLength: 8192
+      maxTokens: 2048
+
+  - name: Qwen 2.5 Coder 1.5B Autocomplete
+    provider: ollama
+    model: qwen2.5-coder:1.5b
+    apiBase: http://localhost:11434
+    roles:
+      - autocomplete
+    defaultCompletionOptions:
+      contextLength: 4096
+      maxTokens: 256
+```
+
+Для [`provider: ollama`](https://docs.continue.dev/customize/model-providers/top-level/ollama) указывается адрес без `/v1`; `apiKey` не нужен. Имя `ollama-local` доступно внутри сети Compose, а расширение на хосте использует опубликованный адрес `localhost:11434`. В Remote SSH, WSL и Dev Containers проверьте, где выполняется расширение: если оно работает в удалённом окружении, `localhost` относится к этому окружению, и `apiBase` должен указывать на доступную оттуда Ollama.
+
+Роль `chat` используется для диалога, `edit` — для редактирования, `apply` — для применения предложенного кода, `autocomplete` — для подсказок при наборе. После сохранения Continue автоматически перечитает конфигурацию. Выберите `Local Ollama`, модель `Qwen 3.5 9B` для чата и `Qwen 2.5 Coder 1.5B Autocomplete` для автодополнения.
+
+### Настройки VS Code: settings.json
+
+В палитре команд (`Ctrl+Shift+P`) откройте `Preferences: Open User Settings (JSON)` и добавьте параметры в существующий объект настроек. Для настроек только текущего проекта их можно записать в `.vscode/settings.json` в корне открытой папки:
+
+```json
+{
+  "editor.inlineSuggest.enabled": true,
+  "continue.enableTabAutocomplete": true
+}
+```
+
+Эти параметры включают встроенные подсказки VS Code и автодополнение Continue. Файл `settings.json` не заменяет конфигурацию моделей в `config.yaml`. Параметр расширения описан в [настройках Continue](https://github.com/continuedev/continue/blob/main/extensions/vscode/package.json).
+
+### Проверка работы и диагностика
+
+1. В панели Continue выберите режим `Chat` и отправьте запрос: «Напиши функцию сложения двух чисел на Python». Должен появиться ответ от выбранной локальной модели.
+2. Выделите небольшой фрагмент кода, вызовите редактирование через `Ctrl+I` (`Cmd+I` на macOS) и попросите добавить комментарий. Проверьте предложенные изменения перед применением.
+3. В файле кода начните писать функцию и дождитесь подсказки; примите её клавишей `Tab`. Если подсказок нет, проверьте `Enable Tab Autocomplete` через кнопку Continue в строке состояния и временно отключите конкурирующий провайдер подсказок, например Copilot.
+
+Во время запроса из терминала в каталоге Compose-примера проверьте активные модели:
+
+```bash
+docker compose exec ollama-local ollama ps
+```
+
+При ошибке подключения откройте на хосте `http://localhost:11434/api/tags`: ожидается JSON со списком загруженных моделей. Сверьте `apiBase`, состояние `ollama-local` и точные теги в `ollama list`. При ошибках расширения откройте `Developer: Toggle Developer Tools` → `Console` в палитре команд VS Code.
+
+Если Ollama сообщает о нехватке памяти, уменьшите `contextLength` чат-модели в `config.yaml`, например до `4096`, либо выберите модель меньшего размера. Чат и автодополнение могут держать в памяти две модели; при нехватке RAM/VRAM временно отключите автодополнение. Режим `Agent` дополнительно требует поддержки вызова инструментов выбранной моделью; назначение роли `chat` само по себе такую поддержку не добавляет.
+
 ## Запуск DeepSeek Harness
 
 Профиль `harness` добавляет DSH к уже запущенному окружению. Конфигурация и сессии сохраняются в отдельном томе, рабочие файлы доступны на хосте в [`workspace`](workspace/README.md).
