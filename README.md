@@ -4,6 +4,7 @@
 
 ## Разделы
 
+- [.NET](dotnet/README.md) — среда разработки .NET в Docker Compose.
 - [Docker](docker/README.md) — команды и руководства по установке и удалению Docker.
 - [Git](git/README.md) — создание репозитория и повседневные команды.
 - [Java](java/README.md) — команды для создания проектов Spring Boot.
